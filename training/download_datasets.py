@@ -5,16 +5,29 @@ Downloads:
   - Flower detection dataset (Model B: flower/bud binary detection)
 
 Usage:
+    # --- Option 1: Direct download (good network to Roboflow) ---
     export ROBOFLOW_API_KEY="your_key"
     python training/download_datasets.py
+
+    # --- Option 2: Local Mac download + pack, then unpack on cloud ---
+    # On Mac:
+    export ROBOFLOW_API_KEY="your_key"
+    python training/download_datasets.py --pack
+    # -> produces training/datasets.tar.gz, upload to PAI-DSW
+    #
+    # On PAI-DSW:
+    python training/download_datasets.py --unpack
 """
 
+import argparse
 import os
 import sys
+import tarfile
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATASETS_DIR = PROJECT_ROOT / "training" / "datasets"
+ARCHIVE_PATH = PROJECT_ROOT / "training" / "datasets.tar.gz"
 
 
 def get_api_key() -> str:
@@ -97,11 +110,63 @@ def verify_dataset(path: Path, name: str) -> None:
         print(f"  {name}/{split}: {n_images} images, {n_labels} labels")
 
 
+def pack_datasets() -> None:
+    """Pack datasets/ into a tar.gz for upload to cloud."""
+    if not DATASETS_DIR.exists():
+        print(f"Error: {DATASETS_DIR} does not exist. Download datasets first.")
+        sys.exit(1)
+
+    print(f"Packing datasets into {ARCHIVE_PATH} ...")
+    with tarfile.open(ARCHIVE_PATH, "w:gz") as tar:
+        tar.add(DATASETS_DIR, arcname="datasets")
+    size_mb = ARCHIVE_PATH.stat().st_size / 1e6
+    print(f"Done: {ARCHIVE_PATH} ({size_mb:.1f} MB)")
+    print(f"\nUpload to PAI-DSW:")
+    print(f"  scp {ARCHIVE_PATH} root@<dsw-ip>:/mnt/workspace/aglass/training/")
+    print(f"  Or use DSW file upload panel.")
+    print(f"Then run:  python training/download_datasets.py --unpack")
+
+
+def unpack_datasets() -> None:
+    """Unpack datasets.tar.gz on cloud."""
+    if not ARCHIVE_PATH.exists():
+        print(f"Error: {ARCHIVE_PATH} not found.")
+        print(f"Upload datasets.tar.gz to {ARCHIVE_PATH} first.")
+        sys.exit(1)
+
+    print(f"Unpacking {ARCHIVE_PATH} ...")
+    with tarfile.open(ARCHIVE_PATH, "r:gz") as tar:
+        tar.extractall(ARCHIVE_PATH.parent)
+    print("Done.")
+
+    print("\nDataset verification:")
+    verify_dataset(DATASETS_DIR / "plantdoc", "plantdoc")
+    verify_dataset(DATASETS_DIR / "flower", "flower")
+    print("\nDatasets ready for training.")
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Download / pack / unpack datasets")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--pack", action="store_true",
+                       help="Pack downloaded datasets into tar.gz for cloud upload")
+    group.add_argument("--unpack", action="store_true",
+                       help="Unpack datasets.tar.gz on cloud")
+    args = parser.parse_args()
+
+    if args.pack:
+        pack_datasets()
+        return
+
+    if args.unpack:
+        unpack_datasets()
+        return
+
+    # Default: download from Roboflow
     api_key = get_api_key()
     DATASETS_DIR.mkdir(parents=True, exist_ok=True)
 
-    plantdoc_path = download_plantdoc(api_key)
+    download_plantdoc(api_key)
     download_flower(api_key)
 
     print("\nDataset verification:")
