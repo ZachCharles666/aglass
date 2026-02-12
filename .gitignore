@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+
+# Data files (keep structure, ignore content)
+data/images/*
+!data/images/.gitkeep
+data/logs/*
+!data/logs/.gitkeep
+data/profiles/*
+!data/profiles/.gitkeep
+data/uploads_queue/*
+!data/uploads_queue/.gitkeep
+data/*.sqlite
+data/*.db
+
+# Models (large files)
+models/*.pt
+models/*.onnx
+models/*_ncnn_model/
+!models/.gitkeep
+
+# Training artifacts
+training/datasets/
+training/runs/
+training/validation_report.json
+
+# OS
+.DS_Store
+Thumbs.db

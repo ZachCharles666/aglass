@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agri-cam"
+version = "0.1.0"
+description = "Agricultural Camera System for Raspberry Pi"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "AgriCam Team"}
+]
+
+# 核心依赖（macOS/开发机可用）
+dependencies = [
+    "fastapi>=0.100.0,<0.125.0",
+    "uvicorn[standard]>=0.23.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0.0",
+    "opencv-python-headless>=4.6.0",
+    "requests>=2.28.0",
+    "python-dotenv>=1.0.0",
+    "psutil>=5.9.0",
+]
+
+[project.optional-dependencies]
+# 树莓派专用依赖
+rpi = [
+    "picamera2>=0.3.12",
+    "RPi.GPIO>=0.7.1",
+]
+
+# 推理模块（可选，体积较大）
+inference = [
+    "ultralytics>=8.0.0",
+]
+
+# 开发依赖
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.25.0",
+]
+
+# 完整安装（树莓派生产环境）
+full = [
+    "agri-cam[rpi,inference]",
+]
+
+[project.scripts]
+agri-cam = "src.api.server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

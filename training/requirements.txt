@@ -1,0 +1,5 @@
+# Cloud training dependencies (Alibaba Cloud GPU instance)
+ultralytics>=8.0.0
+roboflow>=1.1.0
+onnx>=1.14.0
+onnxruntime>=1.15.0

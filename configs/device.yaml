@@ -1,0 +1,55 @@
+camera:
+  cam_a:
+    identifier: "imx708"  # 用于枚举时匹配
+    resolution: [1920, 1080]
+    af_mode: "auto"
+    af_range: "macro"
+    af_speed: "fast"
+
+  cam_b:
+    identifier: "imx477"
+    resolution: [4056, 3040]
+    fixed_focus_distance_cm: 45
+    burst_count: 5
+    burst_interval_ms: 150
+
+capture:
+  interval_sec: 1.5
+  storage_path: "data/images"
+
+distance_buckets:
+  near: [40, 52]
+  mid: [52, 85]
+  far: [85, 300]
+
+led:
+  gpio_pin: 17  # BCM 编号
+  warmup_ms: 100
+
+inference:
+  plant_detector:
+    model_path: "models/plant_detector_v1.pt"
+    conf_threshold: 0.3
+    imgsz: 640
+    camera: cam_a        # 日常监测：植物种类识别
+  flower_detector:
+    model_path: "models/flower_detector_v1.pt"
+    conf_threshold: 0.4
+    imgsz: 640
+    camera: cam_a        # 检测到花朵 → 触发 cam_b burst
+    trigger_burst: true  # 花朵检测触发 Cam-B 高分辨率拍摄
+
+cloud:
+  api_base: "http://localhost:8080"  # Mock Server
+  api_key: "test_key_12345"
+  upload_interval_sec: 30
+
+storage:
+  db_path: "data/db.sqlite"
+  max_storage_gb: 50  # 预留空间
+  auto_cleanup: false  # 阶段 1 不自动清理
+
+logging:
+  level: "INFO"
+  file_path: "data/logs/app.log"
+  format: "json"

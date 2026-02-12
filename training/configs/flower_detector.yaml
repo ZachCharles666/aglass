@@ -1,0 +1,33 @@
+# Model B: Flower detector (flower/bud binary classification)
+# Triggers Cam-B (IMX477) burst capture when flowers detected
+
+model: yolov8n.pt        # pretrained base
+task: detect
+
+# Training hyperparameters
+imgsz: 640
+epochs: 100
+batch: 16
+patience: 20
+lr0: 0.01
+lrf: 0.01
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3
+warmup_momentum: 0.8
+
+# Augmentation — heavier color jitter for flower color variation
+hsv_h: 0.02
+hsv_s: 0.8
+hsv_v: 0.5
+degrees: 15.0
+translate: 0.1
+scale: 0.5
+fliplr: 0.5
+mosaic: 1.0
+
+# Output
+project: runs/flower_detector
+name: v1
+save: true
+save_period: 10
