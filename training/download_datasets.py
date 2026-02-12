@@ -46,7 +46,10 @@ def download_plantdoc(api_key: str) -> Path:
 
 
 def download_flower(api_key: str) -> Path:
-    """Download flower detection dataset in YOLOv8 format."""
+    """Download flower detection dataset in YOLOv8 format.
+
+    Tries multiple public Roboflow Universe datasets as fallback.
+    """
     from roboflow import Roboflow
 
     dest = DATASETS_DIR / "flower"
@@ -54,14 +57,31 @@ def download_flower(api_key: str) -> Path:
         print(f"Flower dataset already exists at {dest}, skipping download.")
         return dest
 
-    print("Downloading flower detection dataset...")
+    # Public flower detection datasets on Roboflow Universe (fallback order)
+    candidates = [
+        ("saidumar", "flower-detection-using-yolov5-dpzjv", 1),  # ~360 images
+        ("flower-42dyl", "flower-detection-hiutj", 3),            # ~182 images
+        ("yolo-581ja", "flower-xscv4", 1),                        # ~143 images
+    ]
+
     rf = Roboflow(api_key=api_key)
-    # Roboflow flower detection dataset (flower / bud classes)
-    project = rf.workspace("flowers-kyocp").project("flower-detection-yhlmb")
-    version = project.version(1)
-    dataset = version.download("yolov8", location=str(dest))
-    print(f"Flower dataset downloaded to {dataset.location}")
-    return Path(dataset.location)
+    for workspace, project_slug, ver in candidates:
+        try:
+            print(f"Trying flower dataset: {workspace}/{project_slug} v{ver} ...")
+            project = rf.workspace(workspace).project(project_slug)
+            version = project.version(ver)
+            dataset = version.download("yolov8", location=str(dest))
+            print(f"Flower dataset downloaded to {dataset.location}")
+            return Path(dataset.location)
+        except Exception as e:
+            print(f"  Failed: {e}")
+            continue
+
+    print("ERROR: All flower dataset sources failed.")
+    print("  You can manually download a flower detection dataset from:")
+    print("  https://universe.roboflow.com/search?q=flower+detection")
+    print("  and place it in:", dest)
+    sys.exit(1)
 
 
 def verify_dataset(path: Path, name: str) -> None:
