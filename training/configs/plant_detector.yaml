@@ -6,10 +6,10 @@ task: detect
 
 # Training hyperparameters
 imgsz: 640
-epochs: 100
+epochs: 200
 batch: 16
-patience: 20
-lr0: 0.01
+patience: 40
+lr0: 0.005
 lrf: 0.01
 momentum: 0.937
 weight_decay: 0.0005
