@@ -27,7 +27,7 @@ DATASETS_DIR = PROJECT_ROOT / "training" / "datasets"
 MODELS = {
     "plant_detector": {
         "pt": MODELS_DIR / "plant_detector_v1.pt",
-        "dataset": DATASETS_DIR / "plantdoc",
+        "dataset": DATASETS_DIR / "plantdoc_filtered",
     },
     "flower_detector": {
         "pt": MODELS_DIR / "flower_detector_v1.pt",
