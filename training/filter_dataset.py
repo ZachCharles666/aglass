@@ -11,15 +11,18 @@ Usage:
     python training/filter_dataset.py --dataset training/datasets/plantdoc --min-samples 20
 """
 
+from __future__ import annotations
+
 import argparse
 import shutil
 from collections import Counter
 from pathlib import Path
+from typing import Tuple
 
 import yaml
 
 
-def load_data_yaml(dataset_dir: Path) -> tuple[Path, dict]:
+def load_data_yaml(dataset_dir: Path) -> Tuple[Path, dict]:
     """Find and load data.yaml."""
     for name in ("data.yaml", "dataset.yaml"):
         p = dataset_dir / name
