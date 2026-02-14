@@ -10,6 +10,8 @@ Usage:
     python training/validate_models.py --model plant_detector
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import time

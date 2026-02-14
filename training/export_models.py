@@ -9,8 +9,11 @@ Usage:
     python training/export_models.py --format ncnn       # NCNN only
 """
 
+from __future__ import annotations
+
 import argparse
 from pathlib import Path
+from typing import List
 
 from ultralytics import YOLO
 
@@ -25,7 +28,7 @@ MODELS = {
 EXPORT_FORMATS = ["onnx", "ncnn"]
 
 
-def export_model(name: str, pt_path: Path, formats: list[str]) -> None:
+def export_model(name: str, pt_path: Path, formats: List[str]) -> None:
     """Export a single model to the specified formats."""
     if not pt_path.exists():
         print(f"SKIP {name}: {pt_path} not found (train first)")
