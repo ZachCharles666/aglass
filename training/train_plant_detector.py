@@ -6,6 +6,7 @@ Saves best.pt to models/plant_detector_v1.pt.
 Usage:
     python training/train_plant_detector.py
     python training/train_plant_detector.py --epochs 50 --batch 32
+    python training/train_plant_detector.py --data training/datasets/plantdoc_filtered/data.yaml
 """
 
 import argparse
@@ -48,11 +49,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Train plant species detector")
     parser.add_argument("--epochs", type=int, help="Override epoch count")
     parser.add_argument("--batch", type=int, help="Override batch size")
+    parser.add_argument("--data", type=str, help="Path to data.yaml (default: auto-detect)")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
     args = parser.parse_args()
 
     cfg = load_config()
-    data_yaml = find_data_yaml()
+    data_yaml = Path(args.data) if args.data else find_data_yaml()
     print(f"Dataset config: {data_yaml}")
 
     # CLI overrides
