@@ -133,8 +133,21 @@ async def health_check() -> HealthResponse:
     except Exception:
         pass
 
+    # 获取 Cam-B 状态
+    try:
+        from ..pipeline.burst_coordinator import get_burst_coordinator
+        coordinator = get_burst_coordinator()
+        if coordinator and coordinator.cam_b:
+            if coordinator.is_bursting:
+                cam_b_status = "bursting"
+            elif coordinator.cam_b.is_started:
+                cam_b_status = "ready"
+    except Exception:
+        pass
+
     # 获取采集状态
     capture_queue_size = 0
+    inference_queue_size = 0
     try:
         from ..pipeline.capture_loop import get_capture_loop
         capture_loop = get_capture_loop()
@@ -144,10 +157,19 @@ async def health_check() -> HealthResponse:
     except Exception:
         pass
 
+    # 获取推理状态
+    try:
+        from ..inference.runner import get_inference_runner
+        runner = get_inference_runner()
+        if runner:
+            inference_queue_size = runner.inference_queue.qsize()
+    except Exception:
+        pass
+
     return HealthResponse(
         status="healthy",
         timestamp=get_iso_timestamp(),
-        version="0.1.0",
+        version="0.2.0",
         uptime_seconds=get_uptime(),
         system=SystemInfo(
             cpu=CpuInfo(**sys_info["cpu"]),
@@ -164,6 +186,7 @@ async def health_check() -> HealthResponse:
         current_profile=current_profile_info,
         queue_sizes={
             "capture_queue": capture_queue_size,
+            "inference_queue": inference_queue_size,
             "burst_queue": 0,
             "upload_queue": 0
         }

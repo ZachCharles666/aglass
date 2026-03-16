@@ -33,13 +33,27 @@ aglass/
 │   │   ├── db.py          # SQLite (WAL模式)
 │   │   ├── repo.py        # ProfileRepository
 │   │   └── file_store.py  # 双写 JSON + SQLite
-│   ├── inference/     # 推理 (待实现)
+│   ├── inference/     # 推理模块 (占位，Phase 2 实现边缘推理)
+│   │   └── __init__.py
 │   └── utils/         # 工具
 │       ├── logger.py
 │       ├── time_id.py
 │       └── sysinfo.py
+├── training/          # 云端训练 (Phase 1 新增)
+│   ├── README.md              # PAI-DSW 训练指南
+│   ├── requirements.txt       # ultralytics, roboflow, onnx
+│   ├── download_datasets.py   # 数据集下载/打包/解包
+│   ├── train_plant_detector.py  # Model A 训练
+│   ├── train_flower_detector.py # Model B 训练
+│   ├── export_models.py       # 导出 ONNX/NCNN
+│   ├── validate_models.py     # 验证 mAP + 速度
+│   └── configs/
+│       ├── plant_detector.yaml  # Model A 超参数
+│       └── flower_detector.yaml # Model B 超参数
 ├── configs/
-│   └── device.yaml
+│   └── device.yaml    # 含双模型推理配置
+├── models/            # 训练产出 (.gitignore 忽略 .pt/.onnx)
+│   └── .gitkeep
 ├── scripts/
 │   ├── deploy_rpi.sh      # 树莓派部署脚本
 │   ├── hardware_test.sh   # 硬件测试脚本
@@ -143,14 +157,67 @@ USE_MOCK_CAMERA=true python -m uvicorn src.api.server:app --port 8000
 rsync -avz --exclude 'venv' --exclude '__pycache__' --exclude '.git' . pi@192.168.31.132:~/aglass/
 ```
 
+## Phase 1 推理模块：云端训练 (进行中)
+
+### 双模型架构
+| 模型 | 数据集 | 类别 | 用途 |
+|------|--------|------|------|
+| plant_detector (Model A) | PlantDoc (~2600张, 13类) | Apple, Blueberry, Cherry 等叶片/果实 | Cam-A 日常监测：植物种类识别 |
+| flower_detector (Model B) | 花朵检测 (二分类) | flower, bud | 检测到花朵 → 触发 Cam-B burst 拍摄 |
+
+### device.yaml 推理配置
+```yaml
+inference:
+  plant_detector:
+    model_path: "models/plant_detector_v1.pt"
+    conf_threshold: 0.3
+    camera: cam_a
+  flower_detector:
+    model_path: "models/flower_detector_v1.pt"
+    conf_threshold: 0.4
+    camera: cam_a
+    trigger_burst: true  # 触发 Cam-B 高分辨率拍摄
+```
+
+### 训练环境
+- **平台**: 阿里云 PAI-DSW (Jupyter + GPU)
+- **GPU**: V100 (16GB) 或 A10
+- **工作目录**: `/mnt/workspace/aglass`
+- **注意**: PAI-DSW 访问 Roboflow 网络不稳定，使用 `--pack`/`--unpack` 模式本地下载数据集后上传
+
+### 训练流水线
+```bash
+# 本地 Mac 下载并打包数据集
+export ROBOFLOW_API_KEY="your_key"
+python training/download_datasets.py          # 下载
+python training/download_datasets.py --pack   # 打包 → datasets.tar.gz
+
+# 上传 datasets.tar.gz 到 PAI-DSW，然后：
+python training/download_datasets.py --unpack # 解包
+python training/train_plant_detector.py       # 训练 Model A
+python training/train_flower_detector.py      # 训练 Model B
+python training/export_models.py              # 导出 ONNX + NCNN
+python training/validate_models.py            # 验证 mAP + 速度报告
+```
+
+### 训练参数 (两个模型共用基础配置)
+- 架构: YOLOv8n, imgsz=640, epochs=100, batch=16, patience=20
+- 支持 `--epochs`, `--batch`, `--resume` CLI 参数覆盖
+
+### 验收标准
+- mAP@50 > 0.5
+- 模型大小 < 15MB
+- 导出 ONNX + NCNN 格式供 RPi4 部署
+
+### GitHub 仓库
+- **地址**: https://github.com/ZachCharles666/aglass.git
+- **Remote**: SSH (`git@github.com:ZachCharles666/aglass.git`)
+- **SSH Key**: ed25519, 邮箱 nobbynoraphyskv@gmail.com
+
 ## 下一步
-1. **运行硬件测试脚本**: 运行 `./scripts/hardware_test.sh` 来全面检测硬件功能。
-2. **测试核心 API 功能**:
-   - **拍照**: 调用 `/capture` 相关端点，确认照片成功保存在 `data/images/`。
-   - **配置**: 调用 `/profile` 相关端点 (增、删、改、查)，确认配置正确保存。
-   - **对焦**: 调用 `/camera/cam-a/af` 相关端点，测试自动和手动对焦功能。
-3. **验证数据存储**: 检查图片文件和 `data/db.sqlite` 数据库中的元数据是否一致。
-4. **(可选) 对焦稳定性测试**: 运行 `scripts/test_af_lock.py` 脚本，长时间测试对焦锁定是否稳定。
+1. **完成 Phase 1 训练**: 在 PAI-DSW 上跑通训练流水线，拿到两个 .pt 模型
+2. **Phase 2 边缘推理**: 实现 `src/inference/` 模块，在 RPi4 上加载模型做实时推理
+3. **花朵触发逻辑**: flower_detector 检测到花朵 → 自动触发 Cam-B burst 拍摄
 
 ---
-最后更新: 2026-02-12
+最后更新: 2026-02-13
